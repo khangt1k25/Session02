@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.metrics import mean_squared_error
 from collections import defaultdict
 
-
+# Class Member has (vector features, label(), id )
 class Member:
     def __init__(self, r_d, label, doc_id):
         self._r_d = r_d
@@ -10,6 +10,7 @@ class Member:
         self._doc_id = doc_id
 
 
+# Class Cluster has centroid (vector) , list of Members
 class Cluster:
     def __init__(self):
         self._centroid = None
@@ -22,13 +23,16 @@ class Cluster:
         self._members.append(new_member)
 
 
+#  Kmeans by hand
 class Kmeans:
+    # Initializing
     def __init__(self, k_clusters):
         self._num_clusters = k_clusters
         self._clusters = [Cluster() for k in range(k_clusters)]
         self._E = []
         self._S = 0
 
+    # Loading data (clustering in train dataset)
     def load_data(self, data_path):
         def sparse_to_dense(r_d, vocab_size):
             vector = [0.0 for i in range(vocab_size)]
@@ -39,7 +43,7 @@ class Kmeans:
                 vector[one_rd_id] = one_rd_tfidf
             return np.array(vector)
 
-        with open("../session01/20news-bydate/words_idfs.txt", "r") as f:
+        with open("../session01/20news-bydate/train_words_idfs.txt", "r") as f:
             vocab = f.read().splitlines()
             vocab_size = len(vocab)
         with open(data_path, "r") as f:
@@ -56,6 +60,7 @@ class Kmeans:
 
             self._data.append(Member(vector_rd, label, doc_id))
 
+    # Initializing centroid for Kmeans
     def random_init(self, seed):
         np.random.seed(seed)
         length = len(self._data)
@@ -67,15 +72,17 @@ class Kmeans:
             self._clusters.append(cluster_k)
         return
 
-    def compute_similarity(self, member, centroid):
+    # Computing Distance in L2 norm
+    def compute_distance(self, member, centroid):
         member_rd = member._r_d
         return np.sum((member_rd - centroid) ** 2)
 
+    # Selecting cluster for member
     def select_cluster_for(self, member):
         minDist = 10e9
         cluster_chosed = None
         for cluster in self._clusters:
-            simi = self.compute_similarity(member, cluster._centroid)
+            simi = self.compute_distance(member, cluster._centroid)
             if simi < minDist:
                 minDist = simi
                 cluster_chosed = cluster
@@ -83,6 +90,7 @@ class Kmeans:
         cluster_chosed.add_Members(member)
         return minDist
 
+    # Updating centroid
     def update_centroid_of(self, cluster):
         member_rds = [member._r_d for member in cluster._members]
         ave_rd = np.mean(member_rds, axis=0)
@@ -90,6 +98,7 @@ class Kmeans:
         new_centroid = np.array([value / sqrt_sum for value in ave_rd])
         cluster.Centroid = new_centroid
 
+    # Criteria
     def stopping_condition(self, criterion, threshold):
         criteria = ["centroid", "similarity", "max_iters"]
         assert criterion in criteria
@@ -114,6 +123,7 @@ class Kmeans:
             else:
                 return False
 
+    # Computing purity
     def compute_purity(self):
         majority_sum = 0
         for cluster in self._clusters:
@@ -123,6 +133,7 @@ class Kmeans:
         print(majority_sum * 1.0 / len(self._data))
         return majority_sum * 1.0 / len(self._data)
 
+    # Computing NMI
     def compute_NMI(self):
         I_value, H_omega, H_C, N = 0.0, 0.0, 0.0, len(self._data)
         for cluster in self._clusters:
@@ -141,6 +152,7 @@ class Kmeans:
         print(I_value * 2.0 / (H_omega + H_C))
         return I_value * 2.0 / (H_omega + H_C)
 
+    # Run KMeans algorithm
     def run(self, seed, criterion, threshold):
         self.random_init(seed)
         self._iteration = 0
@@ -164,7 +176,8 @@ class Kmeans:
         print(b)
 
 
+# Main
 if __name__ == "__main__":
     model = Kmeans(20)
-    model.load_data("../session01/20news-bydate/words_tf_idf.txt")
+    model.load_data("../session01/20news-bydate/train_words_tf_idf.txt")
     model.run(42, "max_iters", 2)

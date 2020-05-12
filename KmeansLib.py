@@ -5,6 +5,7 @@ from sklearn.cluster import KMeans
 from scipy.sparse import csr_matrix
 
 
+# Loading data (clustering in train dataset)
 def load_data(data_path):
     def sparse_to_dense(r_d, vocab_size):
         vector = [0.0 for i in range(vocab_size)]
@@ -15,7 +16,7 @@ def load_data(data_path):
             vector[one_rd_id] = one_rd_tfidf
         return np.array(vector)
 
-    with open("../session01/20news-bydate/words_idfs.txt", "r") as f:
+    with open("../session01/20news-bydate/train_words_idfs.txt", "r") as f:
         vocab = f.read().splitlines()
         vocab_size = len(vocab)
     with open(data_path, "r") as f:
@@ -36,6 +37,7 @@ def load_data(data_path):
     return data, labels
 
 
+# Computing accuracy
 def compute_accuracy(y_predicted, y_expected):
     matches = np.equal(y_expected, y_predicted)
 
@@ -44,15 +46,22 @@ def compute_accuracy(y_predicted, y_expected):
     return accuracy
 
 
+# Kmeans by sklearn
 def clustering_kmeans_sklearn(data, labels):
     X = csr_matrix(data)
     print("=====")
     kmeans = KMeans(
-        n_clusters=20, init="random", n_init=5, tol=1e-3, random_state=42
+        n_clusters=20, init="k-means++", n_init=5, tol=1e-3, random_state=42
     ).fit(X)
     print("inertia = " + str(kmeans.inertia_))
 
+    y_predicted = kmeans.predict(X)
+    accuracy = compute_accuracy(y_predicted=y_predicted, y_expected=labels)
 
+    print("Accuracy" + str(accuracy))
+
+
+# SVM by sklearn
 def clustering_svm_sklearn(data, labels):
     from sklearn.svm import LinearSVC
 
@@ -66,6 +75,7 @@ def clustering_svm_sklearn(data, labels):
     print("Accuracy" + str(accuracy))
 
 
+# Kernel SVM by sklearn
 def clustering_svm_kernel_sklearn(data, labels):
     from sklearn.svm import SVC
 
@@ -74,7 +84,7 @@ def clustering_svm_kernel_sklearn(data, labels):
 
 
 if __name__ == "__main__":
-    data, labels = load_data("../session01/20news-bydate/words_tf_idf.txt")
+    data, labels = load_data("../session01/20news-bydate/train_words_tf_idf.txt")
 
     print("Using sklearn kmeans")
     clustering_svm_sklearn(data, labels)
